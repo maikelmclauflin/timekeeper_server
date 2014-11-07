@@ -5,6 +5,9 @@ module.exports = {
         name: 'michaelmclaughlinblog'
     },
     http: {
+        port: 5000
+    },
+    socket: {
         port: 5432
     },
     env: {

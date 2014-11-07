@@ -13,17 +13,16 @@ module.exports = db = {
         });
         dbConnection.open(function (err) {
             if (err) callback(err);
-            postCollection = dbConnection.collection('post');
-            postCollection.ensureIndex("slug", {
+            postCollection = dbConnection.collection('userData');
+            postCollection.ensureIndex("username", {
                 unique: true
             }, function (err, indexName) {
                 callback(err);
             });
         });
     },
-    posts: {
-        // Find all posts in reverse order (blog order)
-        findAll: function (callback) {
+    userData: {
+        findAllUsers: function (callback) {
             postCollection.find({
                 viewable: true
             }).sort({
@@ -33,22 +32,24 @@ module.exports = db = {
             });
         },
         // Fetch a particular post by its slug
-        findOneBySlug: function (slug, callback) {
+        findOneByUsername: function (username, callback) {
             postCollection.findOne({
-                slug: slug
+                username: username
             }, function (err, post) {
                 callback(err, post);
             });
         },
         // Insert a new post
-        insert: function (post, callback) {
-            post.slug = db.slugify(post.title);
-            // Set the creation date/time
-            post.created = new Date().valueOf();
-            post.modified = post.created;
-            post.viewable = true;
-            delete post.submit;
-            postCollection.insert(post, {
+        makeNewUser: function (userObj, callback) {
+            var privacy,
+                now = new Date().valueOf();
+            if (userObj.status === undefined) privacy = 'private'; // hidden, private, collaborative, public
+            postCollection.insert({
+                created: now,
+                modified: now,
+                viewable: true,
+                privacy: privacy
+            }, {
                 safe: true
             }, function (err) {
                 if (err) {
@@ -58,9 +59,9 @@ module.exports = db = {
                 }
             });
         },
-        remove: function (slug, callback) {
+        hideUser: function (username, callback) {
             postCollection.update({
-                slug: slug
+                username: username
             }, {
                 $set: {
                     viewable: false
@@ -69,26 +70,37 @@ module.exports = db = {
                 callback(err);
             });
         },
-        // Insert a new post
-        update: function (slug, post, callback) {
-            // Set the creation date/time
-            post.slug = db.slugify(post.title);
-            post.modified = new Date().valueOf();
-            delete post.submit;
+        unhideUser: function (username, callback) {
             postCollection.update({
-                slug: slug
+                username: username
             }, {
                 $set: {
-                    modified: post.modified,
-                    slug: post.slug,
-                    title: post.title,
-                    content: post.content
+                    viewable: true
+                }
+            }, function (err) {
+                callback(err);
+            });
+        },
+        // Insert a new post
+        update: function (username, data, callback) {
+            // Set the creation date/time
+            data.modified = new Date().valueOf();
+            delete post.submit;
+            postCollection.update({
+                username: username
+            }, {
+                $set: {
+                    modified: data.modified,
+                    currentProject: data.project
+                },
+                $pushAll: {
+                    project: data.events
                 }
             }, function (err) {
                 if (err) {
                     callback(err);
                 } else {
-                    callback(err, post);
+                    callback(err, data);
                 }
             });
         }

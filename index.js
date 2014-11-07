@@ -1,5 +1,5 @@
 var context = {},
-    express = require('express'),
+    express = require('express.io'),
     app = express(),
     async = require('async');
 // require('./app').init(context);
@@ -25,11 +25,12 @@ function setupView(callback) {
 }
 
 function listen(callback) {
-    context.app.listen(context.settings.http.port);
+    context.app.beginListen(context.application, context.settings.http.port);
     if (callback) callback(null);
 }
 
 function ready(err) {
+    console.log(err);
     if (err) throw err;
     console.log("Ready and listening at http://localhost:" + context.settings.http.port);
 }

@@ -1,4 +1,6 @@
 var express = require('express'),
+    socketIO = require('socket.io'),
+    http = require('http'),
     expressLayouts = require('express-ejs-layouts'),
     bodyParser = require('body-parser'),
     cookieParser = require('cookie-parser'),
@@ -6,53 +8,44 @@ var express = require('express'),
     path = require('path'),
     passport = require('passport'),
     minimatch = require('minimatch'),
-    fs = require('fs'),
-    port;
+    fs = require('fs');
 module.exports = app = {
     init: function (context, callback) {
         var routes = require('../routes')(context),
-            server = require('http').createServer(app),
-            app = context.app = express(),
-            io = require('socket.io')(server),
+            application = context.application = express(),
             root = context.settings.root;
-        port = context.settings.http.port;
-        app.use(expressLayouts);
-        app.set('view engine', 'ejs');
-        app.set('views', root + '/views/pages');
-        app.use(cookieParser());
-        app.use(express.static(path.join(root, '/public')));
-        app.set("layout extractScripts", true);
-        app.set('layout', '../templates/default');
-        app.use(bodyParser.json());
-        app.locals = require('./locals')(context);
-        app.use(bodyParser.urlencoded({
+        io = socketIO(8080);
+        application.use(expressLayouts);
+        application.set('view engine', 'ejs');
+        application.set('views', root + '/views/pages');
+        application.use(cookieParser());
+        application.use(express.static(path.join(root, '/public')));
+        application.set("layout extractScripts", true);
+        application.set('layout', '../templates/default');
+        application.use(bodyParser.json());
+        application.locals = require('./locals')(context);
+        application.use(bodyParser.urlencoded({
             extended: true
         }));
-        app.get('/', function (req, res) {
-            res.render('index');
-        });
-        app.get('/signup', function (req, res) {
-            res.render('register');
-        });
-        app.get('/signout', function (req, res) {
-            req.logout();
-            res.redirect('/');
-        });
-        app.get('/', routes.index);
-        app.get('*', routes.cleanup);
+        application.get('*', routes.pre);
+        application.get('/', routes.index);
+        application.get('/signup', routes.signup);
+        application.get('/signout', routes.signout);
+        application.get('/', routes.index);
+        application.get('*', routes.cleanup);
         if (callback) callback();
     },
-    listen: function (port) {
-        app.listen(port, function () {
+    beginListen: function (application, port) {
+        application.listen(port, function () {
             console.log('listening on port ' + port);
-            io.on('connection', function (socket) {
-                console.log('connected on server side');
-                socket.on('addToDB', function (data) {
-                    console.log('requesting an add to DB');
-                    socket.emit('addToDBComplete', {
-                        data: 'serverData'
-                    });
-                });
+        });
+        io.on('connection', function (socket) {
+            console.log('connected on server side');
+            socket.emit('addToDBComplete', {
+                working: true
+            });
+            socket.on('logging-pushEvents', function (data) {
+                console.log(arguments);
             });
         });
     }
