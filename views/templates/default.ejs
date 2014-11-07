@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+	<%- include modules/head %>
+	<body class="close-nav <%- defineContent('bodyClass') %>">
+		<% if (locals.context.settings.env.debug == true) { %><% } %>
+		<%- include modules/nav %>
+		<div class="page-hidden">
+			<div class="page-wrap">
+				<%- include modules/header %>
+				<%- body %>
+			</div>
+		</div>
+		<script type="text/javascript" src="/min/js/main.min.js"></script>
+		<script type="text/javascript" src="/js/plugins/prism.js"></script>
+		<%- defineContent('js') %>
+	</body>
+</html>
